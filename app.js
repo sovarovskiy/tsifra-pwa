@@ -1,6 +1,56 @@
 // Скрипт квалификации "Аналитическая платформа Цифра"
 // Точное соответствие скрипту "Ориентир" с JTBD и воронками
 
+
+// === АВТОРИЗАЦИЯ ===
+const РАЗРЕШЕННЫЕ_EMAIL = ['admin@analytics.local','manager@analytics.local','user@analytics.local'];
+let текущийПользователь = localStorage.getItem('user_email');
+
+function войти(event) {
+event.preventDefault();
+const email = document.getElementById('email-input').value;
+if (РАЗРЕШЕННЫЕ_EMAIL.includes(email)) {
+localStorage.setItem('user_email', email);
+текущийПользователь = email;
+показатьПриложение();
+} else {
+document.getElementById('login-error').textContent = 'Нет доступа. Обратитесь к администратору.';
+document.getElementById('login-error').classList.remove('hidden');
+}
+}
+
+function выйти() {
+localStorage.removeItem('user_email');
+текущийПользователь = null;
+location.reload();
+}
+
+function показатьПриложение() {
+document.getElementById('login-screen').classList.add('hidden');
+document.getElementById('app-screen').classList.remove('hidden');
+document.getElementById('user-email').textContent = текущийПользователь;
+document.getElementById('user-avatar').textContent = текущийПользователь[0].toUpperCase();
+document.getElementById('контейнер-вопросов').classList.remove('hidden');
+показатьВопрос(текущееСостояние.текущийВопрос);
+}
+
+// === PWA INSTALL ===
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+e.preventDefault();
+deferredPrompt = e;
+document.getElementById('install-prompt').classList.remove('hidden');
+});
+
+function установитьПриложение() {
+if (!deferredPrompt) return;
+deferredPrompt.prompt();
+deferredPrompt.userChoice.then((choiceResult) => {
+if (choiceResult.outcome === 'accepted') document.getElementById('install-prompt').classList.add('hidden');
+deferredPrompt = null;
+});
+}
+
 const SCRIPT_DATA = {
   // JTBD-сегменты с приоритетами
   jtbd: {
@@ -376,5 +426,10 @@ function экспортироватьВCSV() {
   const ссылка = document.createElement('a');
   ссылка.href = URL.createObjectURL(blob);
   ссылка.download = `квалификация_${new Date().toISOString().split('T')[0]}.csv`;
+  
+// Авто-вход при загрузке
+if (текущийПользователь) {
+показатьПриложение();
+}
   ссылка.click();
 }
