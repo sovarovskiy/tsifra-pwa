@@ -1,5 +1,3 @@
-const API_URL = 'https://script.google.com/macros/s/AKfycbxEXyAc4-QqgGCP7DkrP96tyV1_FjoRSdDafPoetbpxM7vP2nKXdAbDktzKB4KLw6kI/exec';
-
 const App = {
   state: {
     user: null,
@@ -57,7 +55,7 @@ const App = {
     const savedUser = localStorage.getItem('tsifra_user');
     if (savedUser) {
       this.state.user = savedUser;
-      this.checkSession();
+      this.showHome();
     } else {
       this.showScreen('screen-login');
     }
@@ -72,44 +70,26 @@ const App = {
     return id;
   },
 
-  async login() {
+  login() {
     const email = document.getElementById('login-email').value.trim();
     const err = document.getElementById('login-error');
-    if (!email) { err.textContent = 'Введите email'; return; }
-    err.textContent = '';
-    try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({action: 'login', email, device_id: this.state.deviceId})
-      });
-      const data = await res.json();
-      if (data.success) {
-        this.state.user = email;
-        localStorage.setItem('tsifra_user', email);
-        this.showHome();
-        this.startSessionCheck();
-      } else {
-        err.textContent = data.message || 'Ошибка входа';
-      }
-    } catch (e) {
-      err.textContent = 'Ошибка связи с сервером';
+    if (!email) {
+      err.textContent = 'Введите email';
+      return;
     }
+    if (!email.includes('@')) {
+      err.textContent = 'Введите корректный email';
+      return;
+    }
+    err.textContent = '';
+    this.state.user = email;
+    localStorage.setItem('tsifra_user', email);
+    this.showHome();
   },
 
-  async logout() {
-    await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({action: 'logout', email: this.state.user})
-    });
+  logout() {
     localStorage.removeItem('tsifra_user');
     this.state.user = null;
-    this.stopSessionCheck();
     this.showScreen('screen-login');
   },
 
@@ -124,7 +104,7 @@ const App = {
     this.showScreen('screen-home');
   },
 
-  async loadStats() {
+  loadStats() {
     this.state.history = JSON.parse(localStorage.getItem('tsifra_history') || '[]');
     const today = this.state.history.filter(h => {
       const d = new Date(h.date);
@@ -137,17 +117,23 @@ const App = {
 
   startCall() {
     const dealId = prompt('Введите ID сделки (8 цифр):');
-    if (!dealId || dealId.length !== 8) { alert('Неверный ID'); return; }
+    if (!dealId || dealId.length !== 8) {
+      alert('Неверный ID');
+      return;
+    }
     const phone = prompt('Введите телефон:');
-    if (!phone) { alert('Не указан телефон'); return; }
+    if (!phone) {
+      alert('Не указан телефон');
+      return;
+    }
     this.state.currentCall = { dealId, phone };
     this.state.answers = {};
     this.showQualify();
   },
 
   showQualify() {
-    document.getElementById('q-deal-id').innerHTML = '**ID:** ' + this.state.currentCall.dealId;
-    document.getElementById('q-phone').innerHTML = '**Тел:** ' + this.state.currentCall.phone;
+    document.getElementById('q-deal-id').innerHTML = '<strong>ID:</strong> ' + this.state.currentCall.dealId;
+    document.getElementById('q-phone').innerHTML = '<strong>Тел:</strong> ' + this.state.currentCall.phone;
     this.renderQuestions();
     this.updateProgress();
     this.showScreen('screen-qualify');
@@ -192,7 +178,10 @@ const App = {
 
   calcResult() {
     const filled = Object.keys(this.state.answers).length;
-    if (filled < this.questions.length) { alert('Ответьте на все вопросы'); return; }
+    if (filled < this.questions.length) {
+      alert('Ответьте на все вопросы');
+      return;
+    }
     const result = this.calculateSegment();
     this.showResult(result);
   },
@@ -227,8 +216,10 @@ const App = {
     }
 
     return {
-      segment, segmentName: this.getSegmentName(segment),
-      funnel, potential,
+      segment,
+      segmentName: this.getSegmentName(segment),
+      funnel,
+      potential,
       contactRole: a.q5 || '-',
       nextAction,
       hint: this.getHint(segment)
@@ -273,17 +264,17 @@ const App = {
     this.showScreen('screen-result');
   },
 
-  async saveAndHome() {
-    await this.saveCall();
+  saveAndHome() {
+    this.saveCall();
     this.goHome();
   },
 
-  async saveAndNew() {
-    await this.saveCall();
+  saveAndNew() {
+    this.saveCall();
     this.startCall();
   },
 
-  async saveCall() {
+  saveCall() {
     const call = {
       ...this.state.currentCall,
       email: this.state.user,
@@ -292,27 +283,6 @@ const App = {
     };
     this.state.history.push(call);
     localStorage.setItem('tsifra_history', JSON.stringify(this.state.history));
-
-    try {
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'saveData',
-          deal_id: call.dealId,
-          phone: call.phone,
-          email: call.email,
-          date: call.date,
-          answers: call.answers,
-          segment: call.result.segment,
-          funnel: call.result.funnel
-        })
-      });
-    } catch(e) {
-      console.error(e);
-    }
   },
 
   goHome() {
@@ -350,40 +320,6 @@ const App = {
       const text = item.textContent.toLowerCase();
       item.style.display = text.includes(q) ? 'block' : 'none';
     });
-  },
-
-  async checkSession() {
-    try {
-      const res = await fetch(API_URL + '?email=' + this.state.user + '&device_id=' + this.state.deviceId);
-      const data = await res.json();
-      if (data.active) {
-        this.showHome();
-        this.startSessionCheck();
-      } else {
-        this.logout();
-      }
-    } catch (e) {
-      this.showScreen('screen-login');
-    }
-  },
-
-  startSessionCheck() {
-    if (this.sessionInterval) return;
-    this.sessionInterval = setInterval(async () => {
-      const res = await fetch(API_URL + '?email=' + this.state.user + '&device_id=' + this.state.deviceId);
-      const data = await res.json();
-      if (!data.active) {
-        alert('Сессия закончена на другом устройстве.');
-        this.logout();
-      }
-    }, 30000);
-  },
-
-  stopSessionCheck() {
-    if (this.sessionInterval) {
-      clearInterval(this.sessionInterval);
-      this.sessionInterval = null;
-    }
   }
 };
 
