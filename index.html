@@ -1,123 +1,69 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0F172A">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Аналитическая платформа Цифра</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Квалификация - Цифра</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #1a1d2e; color: #fff; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
+        .header h1 { font-size: 24px; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .progress-bar { background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px; overflow: hidden; margin: 20px 0; }
+        .progress-fill { background: #4ade80; height: 100%; transition: width 0.3s; }
+        .question-card { background: #252838; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        .question-number { color: #667eea; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+        .question-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .question-text { color: #9ca3af; font-size: 16px; margin-bottom: 20px; line-height: 1.5; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .option-btn { background: #1f2937; border: 2px solid #374151; color: #fff; padding: 16px; border-radius: 12px; cursor: pointer; text-align: left; font-size: 16px; transition: all 0.2s; }
+        .option-btn:hover { border-color: #667eea; background: #2d3748; }
+        .option-btn.selected { background: #667eea; border-color: #667eea; }
+        .nav-buttons { display: flex; gap: 12px; margin-top: 20px; }
+        .btn { flex: 1; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #667eea; color: #fff; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-secondary { background: #374151; color: #fff; }
+        .btn-secondary:hover { background: #4b5563; }
+        .result-screen { text-align: center; }
+        .result-title { font-size: 32px; margin: 40px 0 20px; }
+        .result-message { font-size: 18px; color: #9ca3af; margin-bottom: 40px; }
+        .answer-list { text-align: left; background: #252838; border-radius: 16px; padding: 24px; margin: 20px 0; }
+        .answer-item { padding: 12px 0; border-bottom: 1px solid #374151; }
+        .answer-item:last-child { border-bottom: none; }
+        .answer-q { color: #667eea; font-weight: 600; margin-bottom: 4px; }
+        .answer-a { color: #9ca3af; }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-  <div id="app">
-
-    <!-- ЭКРАН 0: ВХОД -->
-    <div id="screen-login" class="screen active">
-      <div class="login-wrap">
-        <div class="logo">
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="56" height="56" rx="14" fill="#1E293B"/>
-            <path d="M12 40 L12 20 L22 20" stroke="#3882F6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            <polyline points="16,34 22,26 28,30 36,18" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            <circle cx="36" cy="18" r="3" fill="#3882F6"/>
-          </svg>
+    <div class="container">
+        <div class="header">
+            <h1>📞 Скрипт квалификации</h1>
+            <p>Помощник менеджера-квалификатора</p>
         </div>
-        <h1 class="brand-title">Аналитическая<br>платформа <span>Цифра</span></h1>
-        <p class="brand-sub">Помощник менеджера-квалификатора</p>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+
+        <div id="quiz-screen">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress" style="width: 0%"></div>
+            </div>
+            <div id="question-container"></div>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()">← Назад</button>
+                <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()">Далее →</button>
+            </div>
         </div>
-        <button class="btn-primary" onclick="App.login()">Войти</button>
-        <p id="login-error" class="error-msg"></p>
-      </div>
-    </div>
 
-    <!-- ЭКРАН 1: ГЛАВНЫЙ -->
-    <div id="screen-home" class="screen">
-      <header class="app-header">
-        <div class="header-logo">Цифра</div>
-        <div class="header-user" id="header-email"></div>
-        <button class="btn-icon" onclick="App.logout()" title="Выйти">&#x2715;</button>
-      </header>
-      <main class="home-main">
-        <button class="btn-new-call" onclick="App.startCall()">
-          <span class="btn-new-icon">&#9990;</span>
-          Новый звонок
-        </button>
-        <div class="home-stats" id="home-stats">
-          <div class="stat-card" id="stat-today"><span class="stat-num">0</span><span class="stat-label">Сегодня</span></div>
-          <div class="stat-card" id="stat-total"><span class="stat-num">0</span><span class="stat-label">Всего</span></div>
+        <div id="result-screen" class="result-screen hidden">
+            <div class="result-title">✅ Квалификация завершена!</div>
+            <div class="result-message" id="result-message"></div>
+            <div class="answer-list" id="answer-summary"></div>
+            <button class="btn btn-primary" onclick="restart()">Начать заново</button>
         </div>
-        <button class="btn-secondary" onclick="App.showHistory()">&#128203; История звонков</button>
-      </main>
     </div>
 
-    <!-- ЭКРАН 2: КВАЛИФИКАЦИЯ -->
-    <div id="screen-qualify" class="screen">
-      <header class="app-header">
-        <button class="btn-back" onclick="App.goHome()">&#8592;</button>
-        <div class="header-title">Квалификация</div>
-        <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
-      </header>
-      <div class="call-card">
-        <div class="call-info">
-          <span id="q-deal-id"></span>
-          <span id="q-phone"></span>
-        </div>
-      </div>
-      <div class="qualify-body" id="qualify-body"></div>
-      <div class="qualify-footer">
-        <button class="btn-secondary" onclick="App.toggleScript()">&#128196; Скрипт</button>
-        <button class="btn-primary" onclick="App.calcResult()">Результат &#8594;</button>
-      </div>
-      <div class="script-panel" id="script-panel" style="display:none">
-        <h3>Скрипт звонка</h3>
-        <p>Добрый день! Меня зовут [Имя], компания [Название]. Хочу уточнить по вашему объекту — у вас сейчас есть задача по противопожарным системам? Расскажите подробнее...</p>
-        <h4>Типовые возражения:</h4>
-        <ul>
-          <li><b>«Уже работаем с другими»</b> — Понял, а когда принимали решение? Мы можем дать альтернативное предложение для сравнения.</li>
-          <li><b>«Нет бюджета»</b> — А если мы разобьём на этапы под ваш финансовый план?</li>
-          <li><b>«Пришлите КП»</b> — Конечно, давайте я уточню параметры объекта, чтобы КП было точным.</li>
-        </ul>
-        <button class="btn-secondary" onclick="App.toggleScript()">Закрыть</button>
-      </div>
-    </div>
-
-    <!-- ЭКРАН 3: РЕЗУЛЬТАТ -->
-    <div id="screen-result" class="screen">
-      <header class="app-header">
-        <button class="btn-back" onclick="App.showQualify()">&#8592;</button>
-        <div class="header-title">Результат</div>
-      </header>
-      <div class="result-body" id="result-body"></div>
-      <div class="result-footer">
-        <button class="btn-secondary" onclick="App.saveAndHome()">&#128190; Сохранить и выйти</button>
-        <button class="btn-primary" onclick="App.saveAndNew()">+ Новый звонок</button>
-      </div>
-    </div>
-
-    <!-- ЭКРАН 4: ИСТОРИЯ -->
-    <div id="screen-history" class="screen">
-      <header class="app-header">
-        <button class="btn-back" onclick="App.goHome()">&#8592;</button>
-        <div class="header-title">История</div>
-      </header>
-      <div class="history-search">
-        <input type="search" id="history-search" placeholder="Поиск по ID, телефону..." oninput="App.filterHistory()">
-      </div>
-      <div class="history-list" id="history-list"></div>
-    </div>
-
-  </div>
-
-  <script src="app.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
-  </script>
+    <script src="app.js"></script>
 </body>
 </html>
