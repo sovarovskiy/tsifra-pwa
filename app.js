@@ -80,6 +80,9 @@ const App = {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({action: 'login', email, device_id: this.state.deviceId})
       });
       const data = await res.json();
@@ -99,6 +102,9 @@ const App = {
   async logout() {
     await fetch(API_URL, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({action: 'logout', email: this.state.user})
     });
     localStorage.removeItem('tsifra_user');
@@ -140,8 +146,8 @@ const App = {
   },
 
   showQualify() {
-    document.getElementById('q-deal-id').innerHTML = '<b>ID:</b> ' + this.state.currentCall.dealId;
-    document.getElementById('q-phone').innerHTML = '<b>Тел:</b> ' + this.state.currentCall.phone;
+    document.getElementById('q-deal-id').innerHTML = '**ID:** ' + this.state.currentCall.dealId;
+    document.getElementById('q-phone').innerHTML = '**Тел:** ' + this.state.currentCall.phone;
     this.renderQuestions();
     this.updateProgress();
     this.showScreen('screen-qualify');
@@ -154,25 +160,8 @@ const App = {
       const block = document.createElement('div');
       block.className = 'q-block';
       const answered = this.state.answers[q.id];
-      const header = `
-        <div class="q-block-header" onclick="App.toggleBlock(${i})">
-          <div style="display:flex;align-items:center;flex:1">
-            <div class="q-num">${i+1}</div>
-            <div>${q.title}</div>
-          </div>
-          ${answered ? '<span class="q-done">✓</span>' : ''}
-        </div>
-      `;
-      const bodyHtml = `
-        <div class="q-block-body ${i===0?'open':''}" id="qb-${i}">
-          <div class="q-text">${q.text}</div>
-          <div class="chips">
-            ${q.options.map(opt => 
-              `<div class="chip ${this.state.answers[q.id]===opt?'selected':''}" onclick="App.selectAnswer('${q.id}', '${opt}')">${opt}</div>`
-            ).join('')}
-          </div>
-        </div>
-      `;
+      const header = `<div class="q-header" onclick="App.toggleBlock(${i})">${i+1}. ${q.title} ${answered ? '✓' : ''}</div>`;
+      const bodyHtml = `<div class="q-body" id="qb-${i}"><p>${q.text}</p>${q.options.map(opt => `<button class="btn-opt" onclick="App.selectAnswer('${q.id}', '${opt}')">${opt}</button>`).join('')}</div>`;
       block.innerHTML = header + bodyHtml;
       body.appendChild(block);
     });
@@ -203,10 +192,7 @@ const App = {
 
   calcResult() {
     const filled = Object.keys(this.state.answers).length;
-    if (filled < this.questions.length) {
-      alert('Ответьте на все вопросы');
-      return;
-    }
+    if (filled < this.questions.length) { alert('Ответьте на все вопросы'); return; }
     const result = this.calculateSegment();
     this.showResult(result);
   },
@@ -217,7 +203,7 @@ const App = {
     let funnel = 'ОГЗ / упрощённые';
     let potential = 20;
     let nextAction = 'Назначить встречу';
-    
+
     if (a.q1 === 'Нет задачи') {
       segment = 'F-05';
       funnel = 'Не SQL';
@@ -241,10 +227,8 @@ const App = {
     }
 
     return {
-      segment,
-      segmentName: this.getSegmentName(segment),
-      funnel,
-      potential,
+      segment, segmentName: this.getSegmentName(segment),
+      funnel, potential,
       contactRole: a.q5 || '-',
       nextAction,
       hint: this.getHint(segment)
@@ -276,26 +260,13 @@ const App = {
   showResult(result) {
     const body = document.getElementById('result-body');
     body.innerHTML = `
-      <div class="result-segment">
-        <div class="seg-code">${result.segment}</div>
-        <div class="seg-name">${result.segmentName}</div>
-      </div>
-      <div class="result-card">
-        <div class="rc-label">Воронка</div>
-        <div class="rc-value">${result.funnel}</div>
-      </div>
-      <div class="result-card">
-        <div class="rc-label">Потенциал</div>
-        <div class="rc-value ${result.potential >= 20 ? 'green' : result.potential >= 10 ? 'yellow' : 'red'}">${result.potential}</div>
-      </div>
-      <div class="result-card">
-        <div class="rc-label">Контакт</div>
-        <div class="rc-value">${result.contactRole}</div>
-      </div>
-      <div class="result-next">
-        <div class="rc-label">Следующий шаг</div>
-        <div class="rc-value">${result.nextAction}</div>
-        <div class="result-hint">${result.hint}</div>
+      <div class="result-grid">
+        <div class="result-item"><strong>Сегмент:</strong> ${result.segment} – ${result.segmentName}</div>
+        <div class="result-item"><strong>Воронка:</strong> ${result.funnel}</div>
+        <div class="result-item"><strong>Потенциал:</strong> ${result.potential}%</div>
+        <div class="result-item"><strong>Контакт:</strong> ${result.contactRole}</div>
+        <div class="result-item"><strong>Следующий шаг:</strong> ${result.nextAction}</div>
+        <p class="hint">${result.hint}</p>
       </div>
     `;
     this.state.currentCall.result = result;
@@ -321,9 +292,13 @@ const App = {
     };
     this.state.history.push(call);
     localStorage.setItem('tsifra_history', JSON.stringify(this.state.history));
+
     try {
       await fetch(API_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           action: 'saveData',
           deal_id: call.dealId,
@@ -335,7 +310,9 @@ const App = {
           funnel: call.result.funnel
         })
       });
-    } catch(e) { console.error(e); }
+    } catch(e) {
+      console.error(e);
+    }
   },
 
   goHome() {
@@ -350,7 +327,7 @@ const App = {
   renderHistory() {
     const list = document.getElementById('history-list');
     if (!this.state.history.length) {
-      list.innerHTML = '<div class="empty-state">Нет записей</div>';
+      list.innerHTML = '<p>Нет записей</p>';
       return;
     }
     list.innerHTML = this.state.history.slice().reverse().map(h => {
@@ -358,12 +335,10 @@ const App = {
       const segClass = seg ? 'seg-' + seg.charAt(0) : '';
       return `
         <div class="history-item ${segClass}">
-          <div class="hi-top">
-            <div class="hi-seg">${seg}</div>
-            <div class="hi-date">${new Date(h.date).toLocaleString('ru-RU')}</div>
-          </div>
-          <div class="hi-phone">ID: ${h.dealId} | ${h.phone}</div>
-          <div class="hi-funnel">${h.result ? h.result.funnel : ''}</div>
+          <div class="history-seg">${seg}</div>
+          <div class="history-date">${new Date(h.date).toLocaleString('ru-RU')}</div>
+          <div class="history-info">ID: ${h.dealId} | ${h.phone}</div>
+          <div class="history-funnel">${h.result ? h.result.funnel : ''}</div>
         </div>
       `;
     }).join('');
