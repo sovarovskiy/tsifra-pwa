@@ -4,39 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Квалификация - Цифра</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #1a1d2e; color: #fff; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
-        .header h1 { font-size: 24px; margin-bottom: 8px; }
-        .header p { opacity: 0.9; font-size: 14px; }
-        .progress-bar { background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px; overflow: hidden; margin: 20px 0; }
-        .progress-fill { background: #4ade80; height: 100%; transition: width 0.3s; }
-        .question-card { background: #252838; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
-        .question-number { color: #667eea; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
-        .question-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-        .question-text { color: #9ca3af; font-size: 16px; margin-bottom: 20px; line-height: 1.5; }
-        .options { display: flex; flex-direction: column; gap: 12px; }
-        .option-btn { background: #1f2937; border: 2px solid #374151; color: #fff; padding: 16px; border-radius: 12px; cursor: pointer; text-align: left; font-size: 16px; transition: all 0.2s; }
-        .option-btn:hover { border-color: #667eea; background: #2d3748; }
-        .option-btn.selected { background: #667eea; border-color: #667eea; }
-        .nav-buttons { display: flex; gap: 12px; margin-top: 20px; }
-        .btn { flex: 1; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background: #667eea; color: #fff; }
-        .btn-primary:hover { background: #5568d3; }
-        .btn-secondary { background: #374151; color: #fff; }
-        .btn-secondary:hover { background: #4b5563; }
-        .result-screen { text-align: center; }
-        .result-title { font-size: 32px; margin: 40px 0 20px; }
-        .result-message { font-size: 18px; color: #9ca3af; margin-bottom: 40px; }
-        .answer-list { text-align: left; background: #252838; border-radius: 16px; padding: 24px; margin: 20px 0; }
-        .answer-item { padding: 12px 0; border-bottom: 1px solid #374151; }
-        .answer-item:last-child { border-bottom: none; }
-        .answer-q { color: #667eea; font-weight: 600; margin-bottom: 4px; }
-        .answer-a { color: #9ca3af; }
-        .hidden { display: none; }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="container">
@@ -45,25 +14,74 @@
             <p>Помощник менеджера-квалификатора</p>
         </div>
 
-        <div id="quiz-screen">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress" style="width: 0%"></div>
+        <!-- Экран вопросов -->
+        <div id="контейнер-вопросов" class="quiz-screen">
+            <!-- Прогресс -->
+            <div class="progress-container">
+                <div id="прогресс-бар" class="progress-bar"></div>
+                <div id="прогресс-текст" class="progress-text">0%</div>
             </div>
-            <div id="question-container"></div>
+
+            <!-- Карточка вопроса -->
+            <div class="question-card">
+                <div id="вопрос-заголовок" class="question-number"></div>
+                <div id="вопрос-текст" class="question-text"></div>
+                <div id="намёк" class="hint"></div>
+                <div id="варианты-ответов" class="options"></div>
+            </div>
+
+            <!-- Кнопки навигации -->
             <div class="nav-buttons">
-                <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()">← Назад</button>
-                <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()">Далее →</button>
+                <button id="назад" class="btn btn-secondary" onclick="предыдущийВопрос()">← Назад</button>
+                <button id="далее" class="btn btn-primary" onclick="следующийВопрос()">Далее →</button>
+                <button id="завершить" class="btn btn-success" onclick="завершитьКвалификацию()" style="display:none;">Завершить</button>
             </div>
         </div>
 
-        <div id="result-screen" class="result-screen hidden">
-            <div class="result-title">✅ Квалификация завершена!</div>
-            <div class="result-message" id="result-message"></div>
-            <div class="answer-list" id="answer-summary"></div>
-            <button class="btn btn-primary" onclick="restart()">Начать заново</button>
+        <!-- Экран результатов -->
+        <div id="контейнер-результатов" class="result-screen" style="display:none;">
+            <div class="result-card">
+                <h2>🎯 Квалификация завершена!</h2>
+                
+                <div class="result-section">
+                    <h3>Результаты:</h3>
+                    <p><strong>JTBD:</strong> <span id="результат-jtbd"></span></p>
+                    <p><strong>Воронка:</strong> <span id="результат-воронка"></span></p>
+                    <p><em id="результат-воронка-описание"></em></p>
+                    <p><strong>Приоритет:</strong> <span id="результат-приоритет"></span></p>
+                </div>
+
+                <div class="result-section">
+                    <h3>Детализация:</h3>
+                    <p><strong>Потенциал:</strong> <span id="результат-потенциал"></span></p>
+                    <p><strong>Тип клиента:</strong> <span id="результат-тип"></span></p>
+                    <p><strong>Регион:</strong> <span id="результат-регион"></span></p>
+                    <p><strong>Срок:</strong> <span id="результат-срок"></span></p>
+                    <p><strong>ЛПР:</strong> <span id="результат-лпр"></span></p>
+                </div>
+
+                <div class="result-section">
+                    <h3>📝 Шаблон завершения:</h3>
+                    <div id="шаблон-завершения" class="template-box"></div>
+                </div>
+
+                <button class="btn btn-primary" onclick="начатьЗаново()">🔄 Новая квалификация</button>
+                <button class="btn btn-secondary" onclick="экспортироватьВCSV()">💾 Экспорт CSV</button>
+            </div>
+
+            <!-- История -->
+            <div class="history-section">
+                <h3>📊 История квалификаций</h3>
+                <div id="список-истории" class="history-list"></div>
+            </div>
         </div>
     </div>
 
     <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
 </body>
 </html>
