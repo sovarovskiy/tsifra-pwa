@@ -523,3 +523,84 @@ body {
 .hidden {
   display: none !important;
 }
+/* ===== ОБНОВЛЕННЫЕ СТИЛИ КНОПОК ===== */
+
+.вариант-ответа {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 18px 24px !important;
+  border-radius: 12px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+  min-height: 60px !important;
+  width: 100% !important;
+}
+
+.вариант-ответа:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6) !important;
+}
+
+.вариант-ответа.выбран {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+  box-shadow: 0 6px 25px rgba(72, 187, 120, 0.6) !important;
+}
+
+#далее {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 14px 32px !important;
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4) !important;
+  flex: 1 !important;
+}
+
+#далее:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6) !important;
+}
+
+#назад {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  padding: 14px 32px !important;
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+#назад:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+#завершить {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 14px 32px !important;
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4) !important;
+  flex: 1 !important;
+}
+
+#завершить:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6) !important;
+}
