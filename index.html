@@ -1,53 +1,150 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Аналитическая платформа Цифра - Квалификация</title>
-<link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Аналитическая платформа Цифра - Квалификация</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
-<!-- LOGIN SCREEN -->
-<div id="login-screen" class="login-screen">
-<div class="card login-card">
-<div class="app-header">
-<div class="app-logo"><span class="app-logo-icon">📊</span></div>
-<h1 class="app-title">Аналитическая платформа Цифра</h1>
-<p class="app-subtitle">Скрипт квалификации</p>
-</div>
-<form class="login-form" onsubmit="войти(event)">
-<div class="form-group">
-<label class="form-label">Рабочий email</label>
-<input type="email" id="email-input" class="form-input" placeholder="your@analytics.local" required>
-<div id="login-error" class="form-error hidden"></div>
-</div>
-<button type="submit" class="btn btn-primary">Войти</button>
-</form>
-</div>
-</div>
-<!-- APP SCREEN -->
-<div id="app-screen" class="app-container hidden">
-<div class="app-header">
-<div class="app-logo"><span class="app-logo-icon">📊</span></div>
-<h1 class="app-title">Аналитическая платформа Цифра</h1>
-<p class="app-subtitle">Скрипт квалификации</p>
-</div>
-<div class="user-menu">
-<div class="user-info"><div class="user-avatar" id="user-avatar"></div><span class="user-email" id="user-email"></span></div>
-<button class="btn-logout" onclick="выйти()">Выйти</button>
-</div>
-<div id="контейнер-вопросов" class="hidden">
-<div class="card"><div class="question-indicator" id="вопрос-заголовок"></div><div class="question-text" id="вопрос-текст"></div></div>
-<div class="card"><div class="question-hint" id="намёк"></div><div class="answers-grid" id="варианты-ответов"></div></div>
-<div class="nav-buttons"><button id="назад" class="btn btn-secondary" onclick="предыдущийВопрос()">← Назад</button><button id="далее" class="btn btn-primary" onclick="следующийВопрос()">Далее →</button><button id="завершить" class="btn btn-success hidden" onclick="завершитьКвалификацию()">Завершить</button></div>
-</div>
-<div id="контейнер-результатов" class="hidden">
-<div class="card"><div class="result-badge success">🎯 Квалификация завершена!</div><div class="result-grid"><div class="result-item"><div class="result-label">JTBD</div><div class="result-value" id="результат-jtbd"></div></div><div class="result-item"><div class="result-label">Воронка</div><div class="result-value" id="результат-воронка"></div></div><div class="result-item"><div class="result-label">Приоритет</div><div class="result-value" id="результат-приоритет"></div></div><div class="result-item"><div class="result-label">Потенциал</div><div class="result-value" id="результат-потенциал"></div></div><div class="result-item"><div class="result-label">Тип клиента</div><div class="result-value" id="результат-тип"></div></div><div class="result-item"><div class="result-label">Регион</div><div class="result-value" id="результат-регион"></div></div></div><div class="closing-template"><div class="closing-template-title">💬 Шаблон завершения</div><div class="closing-template-text" id="шаблон-завершения"></div></div></div>
-<button class="btn btn-primary" onclick="начатьЗаново()">🔄 Новая квалификация</button>
-</div>
-</div>
-<div id="install-prompt" class="install-prompt hidden"><button class="btn btn-install" onclick="установитьПриложение()">📥 Установить приложение</button></div>
-<script src="app.js"></script>
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="login-screen">
+    <div class="card login-card">
+      <div class="app-header">
+        <div class="app-logo">
+          <span class="app-logo-icon">📊</span>
+        </div>
+        <h1 class="app-title">Аналитическая платформа Цифра</h1>
+        <p class="app-subtitle">Скрипт квалификации</p>
+      </div>
+
+      <form class="login-form" onsubmit="войти(event)">
+        <div class="form-group">
+          <label class="form-label">Рабочий email</label>
+          <input
+            type="email"
+            id="email-input"
+            class="form-input"
+            placeholder="your@analytics.local"
+            required
+          >
+          <div id="login-error" class="form-error hidden"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Войти</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP SCREEN -->
+  <div id="app-screen" class="app-container hidden">
+    <div class="app-header">
+      <div class="app-logo">
+        <span class="app-logo-icon">📊</span>
+      </div>
+      <h1 class="app-title">Аналитическая платформа Цифра</h1>
+      <p class="app-subtitle">Скрипт квалификации</p>
+    </div>
+
+    <div class="user-menu">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar"></div>
+        <span class="user-email" id="user-email"></span>
+      </div>
+      <button class="btn-logout" onclick="выйти()">Выйти</button>
+    </div>
+
+    <div id="контейнер-вопросов" class="hidden">
+      <div class="card">
+        <div class="question-indicator" id="вопрос-заголовок"></div>
+        <div class="question-text" id="вопрос-текст"></div>
+      </div>
+
+      <div class="card">
+        <div class="question-hint" id="намёк"></div>
+        <div class="answers-grid" id="варианты-ответов"></div>
+      </div>
+
+      <div class="nav-buttons">
+        <button
+          id="назад"
+          class="btn btn-secondary"
+          onclick="предыдущийВопрос()"
+        >
+          ← Назад
+        </button>
+
+        <button
+          id="далее"
+          class="btn btn-primary"
+          onclick="следующийВопрос()"
+        >
+          Далее →
+        </button>
+
+        <button
+          id="завершить"
+          class="btn btn-success hidden"
+          onclick="завершитьКвалификацию()"
+        >
+          ✓ Завершить
+        </button>
+      </div>
+    </div>
+
+    <div id="контейнер-результатов" class="hidden">
+      <div class="card">
+        <div class="result-badge success">🎯 Квалификация завершена!</div>
+
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="result-label">JTBD</div>
+            <div class="result-value" id="результат-jtbd"></div>
+          </div>
+
+          <div class="result-item">
+            <div class="result-label">Воронка</div>
+            <div class="result-value" id="результат-воронка"></div>
+          </div>
+
+          <div class="result-item">
+            <div class="result-label">Приоритет</div>
+            <div class="result-value" id="результат-приоритет"></div>
+          </div>
+
+          <div class="result-item">
+            <div class="result-label">Потенциал</div>
+            <div class="result-value" id="результат-потенциал"></div>
+          </div>
+
+          <div class="result-item">
+            <div class="result-label">Тип клиента</div>
+            <div class="result-value" id="результат-тип"></div>
+          </div>
+
+          <div class="result-item">
+            <div class="result-label">Регион</div>
+            <div class="result-value" id="результат-регион"></div>
+          </div>
+        </div>
+
+        <div class="closing-template">
+          <div class="closing-template-title">💬 Шаблон завершения</div>
+          <div class="closing-template-text" id="шаблон-завершения"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="начатьЗаново()">🔄 Новая квалификация</button>
+    </div>
+  </div>
+
+  <div id="install-prompt" class="install-prompt hidden">
+    <button class="btn btn-install" onclick="установитьПриложение()">
+      📥 Установить приложение
+    </button>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
