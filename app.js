@@ -1,58 +1,80 @@
 // Скрипт квалификации "Аналитическая платформа Цифра"
 // Точное соответствие скрипту "Ориентир" с JTBD и воронками
 
-
 // === АВТОРИЗАЦИЯ ===
-const РАЗРЕШЕННЫЕ_EMAIL = ['admin@analytics.local','manager@analytics.local','user@analytics.local'];
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxEXyAc4-QqgGCP7DkrP96tyV1_FjoRSdDafPoetbpxM7vP2nKXdAbDktzKB4KLw6kI/exec';
 let текущийПользователь = localStorage.getItem('user_email');
 
-function войти(event) {
-event.preventDefault();
-const email = document.getElementById('email-input').value;
-if (РАЗРЕШЕННЫЕ_EMAIL.includes(email)) {
-localStorage.setItem('user_email', email);
-текущийПользователь = email;
-показатьПриложение();
-} else {
-document.getElementById('login-error').textContent = 'Нет доступа. Обратитесь к администратору.';
-document.getElementById('login-error').classList.remove('hidden');
+async function войти(event) {
+  event.preventDefault();
+  const email = document.getElementById('email-input').value;
+  
+  try {
+    const response = await fetch(`${WEB_APP_URL}?action=checkEmail&email=${encodeURIComponent(email)}`);
+    const data = await response.json();
+    
+    if (data.allowed) {
+      const deviceId = data.device_id || generateDeviceId();
+      localStorage.setItem('user_email', email);
+      localStorage.setItem('device_id', deviceId);
+      текущийПользователь = email;
+      
+      // Логин на сервер
+      await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'login', email: email, device_id: deviceId})
+      });
+      
+      показатьПриложение();
+    } else {
+      document.getElementById('login-error').textContent = 'Нет доступа. Обратитесь к администратору.';
+      document.getElementById('login-error').classList.remove('hidden');
+    }
+  } catch (error) {
+    document.getElementById('login-error').textContent = 'Ошибка связи с сервером';
+    document.getElementById('login-error').classList.remove('hidden');
+  }
 }
+
+function generateDeviceId() {
+  return 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
 function выйти() {
-localStorage.removeItem('user_email');
-текущийПользователь = null;
-location.reload();
+  localStorage.removeItem('user_email');
+  localStorage.removeItem('device_id');
+  текущийПользователь = null;
+  location.reload();
 }
 
 function показатьПриложение() {
-document.getElementById('login-screen').classList.add('hidden');
-document.getElementById('app-screen').classList.remove('hidden');
-document.getElementById('user-email').textContent = текущийПользователь;
-document.getElementById('user-avatar').textContent = текущийПользователь[0].toUpperCase();
-document.getElementById('контейнер-вопросов').classList.remove('hidden');
-показатьВопрос(текущееСостояние.текущийВопрос);
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-screen').classList.remove('hidden');
+  document.getElementById('user-email').textContent = текущийПользователь;
+  document.getElementById('user-avatar').textContent = текущийПользователь[0].toUpperCase();
+  document.getElementById('контейнер-вопросов').classList.remove('hidden');
+  показатьВопрос(текущееСостояние.текущийВопрос);
 }
 
 // === PWA INSTALL ===
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
-e.preventDefault();
-deferredPrompt = e;
-document.getElementById('install-prompt').classList.remove('hidden');
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-prompt').classList.remove('hidden');
 });
 
 function установитьПриложение() {
-if (!deferredPrompt) return;
-deferredPrompt.prompt();
-deferredPrompt.userChoice.then((choiceResult) => {
-if (choiceResult.outcome === 'accepted') document.getElementById('install-prompt').classList.add('hidden');
-deferredPrompt = null;
-});
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then((choiceResult) => {
+    if (choiceResult.outcome === 'accepted') document.getElementById('install-prompt').classList.add('hidden');
+    deferredPrompt = null;
+  });
 }
 
 const SCRIPT_DATA = {
-  // JTBD-сегменты с приоритетами
   jtbd: {
     'A01': {имя:'Предписание/Аварийность', приоритет:1, воронка:'ОГЗ/фокус'},
     'A02': {имя:'Плановая проверка МЧС', приоритет:2, воронка:'ОГЗ/фокус'},
@@ -65,8 +87,6 @@ const SCRIPT_DATA = {
     'E04': {имя:'Собственник (строит для себя)', приоритет:9, воронка:'ОГЗ/фокус'},
     'E05': {имя:'Управляющая компания', приоритет:10, воронка:'Развитие'}
   },
-
-  // Воронки (правильная таксономия)
   воронки: {
     'ОГЗ/фокус': 'ОГЗ с фокусной детализацией (А-сегменты)',
     'ОГЗ/упрощённая': 'ОГЗ упрощённая (В-сегменты с бюджетом)',
@@ -77,7 +97,6 @@ const SCRIPT_DATA = {
 };
 
 const вопросы = [
-  // Вопрос 1: Открытие + подтверждение потребности
   {
     идентификатор: 1,
     код: 'открытие',
@@ -89,8 +108,6 @@ const вопросы = [
       {центр: 'нет', этикетка: 'Нет / Не актуально'}
     ]
   },
-
-  // Вопрос 2: Три согласия #1 - Точность расчёта
   {
     идентификатор: 2,
     код: 'согласие_расчёт',
@@ -102,8 +119,6 @@ const вопросы = [
       {центр: 'нет', этикетка: 'Нет, не критично'}
     ]
   },
-
-  // Вопрос 3: Три согласия #2 - Экспертиза и сроки
   {
     идентификатор: 3,
     код: 'согласие_экспертиза',
@@ -115,8 +130,6 @@ const вопросы = [
       {центр: 'нет', этикетка: 'Не приоритет'}
     ]
   },
-
-  // Вопрос 4: Три согласия #3 - Готовность к вопросам
   {
     идентификатор: 4,
     код: 'согласие_вопросы',
@@ -128,8 +141,6 @@ const вопросы = [
       {центр: 'нет', этикетка: 'Нет времени сейчас'}
     ]
   },
-
-  // Вопрос 5: Потребность/JTBD (Почему обратился?)
   {
     идентификатор: 5,
     код: 'jtbd',
@@ -149,8 +160,6 @@ const вопросы = [
       {центр: 'E05', этикетка: 'Управляющая компания'}
     ]
   },
-
-  // Вопрос 6: Тип клиента
   {
     идентификатор: 6,
     код: 'тип_клиента',
@@ -166,8 +175,6 @@ const вопросы = [
       {центр: 'управляющая', этикетка: 'Управляющая компания'}
     ]
   },
-
-  // Вопрос 7: Потенциал (Чек проекта)
   {
     идентификатор: 7,
     код: 'потенциал',
@@ -180,8 +187,6 @@ const вопросы = [
       {центр: 'малый', этикетка: 'До 1 млн руб (S - Small)'}
     ]
   },
-
-  // Вопрос 8: Тип контакта (ЛПР?)
   {
     идентификатор: 8,
     код: 'лпр',
@@ -193,8 +198,6 @@ const вопросы = [
       {центр: 'не_лпр', этикетка: 'Нет, решает директор/собственник'}
     ]
   },
-
-  // Вопрос 9: Регион
   {
     идентификатор: 9,
     код: 'регион',
@@ -207,8 +210,6 @@ const вопросы = [
       {центр: 'регионы', этикетка: 'Регионы РФ'}
     ]
   },
-
-  // Вопрос 10: Срок выбора подрядчика
   {
     идентификатор: 10,
     код: 'срок',
@@ -223,59 +224,56 @@ const вопросы = [
   }
 ];
 
-// Текущее состояние
 let текущееСостояние = {
   текущийВопрос: 0,
   ответы: {},
   результат: null
 };
 
-// История квалификаций
 let история = JSON.parse(localStorage.getItem('история_квалификаций') || '[]');
 
-// Инициализация при загрузке
 window.addEventListener('DOMContentLoaded', () => {
-  показатьВопрос(текущееСостояние.текущийВопрос);
-  обновитьПрогресс();
-  отобразитьИсторию();
+  if (текущийПользователь) {
+    показатьПриложение();
+  }
 });
 
-// Показать вопрос
 function показатьВопрос(индекс) {
   const вопрос = вопросы[индекс];
   if (!вопрос) return;
-
+  
   document.getElementById('вопрос-заголовок').textContent = `Вопрос ${индекс + 1} из ${вопросы.length}`;
   document.getElementById('вопрос-текст').textContent = вопрос.текст;
   document.getElementById('намёк').textContent = вопрос.намекать;
-
+  
   const контейнерВариантов = document.getElementById('варианты-ответов');
   контейнерВариантов.innerHTML = '';
-
+  
   вопрос.параметры.forEach((вариант) => {
     const кнопка = document.createElement('button');
     кнопка.className = 'вариант-ответа';
     кнопка.textContent = вариант.этикетка;
+    if (текущееСостояние.ответы[вопрос.код] === вариант.центр) {
+      кнопка.classList.add('выбран');
+    }
     кнопка.onclick = () => выбратьОтвет(вопрос.код, вариант.центр);
     контейнерВариантов.appendChild(кнопка);
   });
-
-  // Управление кнопками навигации
+  
   document.getElementById('назад').disabled = индекс === 0;
   document.getElementById('далее').style.display = индекс === вопросы.length - 1 ? 'none' : 'inline-block';
   document.getElementById('завершить').style.display = индекс === вопросы.length - 1 ? 'inline-block' : 'none';
+  
+  обновитьПрогресс();
 }
 
-// Выбрать ответ
 function выбратьОтвет(код, значение) {
   текущееСостояние.ответы[код] = значение;
   localStorage.setItem('текущая_квалификация', JSON.stringify(текущееСостояние));
   
-  // Подсветить выбранный вариант
   document.querySelectorAll('.вариант-ответа').forEach(btn => btn.classList.remove('выбран'));
   event.target.classList.add('выбран');
   
-  // Автопереход на следующий вопрос через 300мс
   setTimeout(() => {
     if (текущееСостояние.текущийВопрос < вопросы.length - 1) {
       следующийВопрос();
@@ -283,12 +281,10 @@ function выбратьОтвет(код, значение) {
   }, 300);
 }
 
-// Навигация
 function следующийВопрос() {
   if (текущееСостояние.текущийВопрос < вопросы.length - 1) {
     текущееСостояние.текущийВопрос++;
     показатьВопрос(текущееСостояние.текущийВопрос);
-    обновитьПрогресс();
   }
 }
 
@@ -296,23 +292,42 @@ function предыдущийВопрос() {
   if (текущееСостояние.текущийВопрос > 0) {
     текущееСостояние.текущийВопрос--;
     показатьВопрос(текущееСостояние.текущийВопрос);
-    обновитьПрогресс();
   }
 }
 
-// Обновить прогресс
 function обновитьПрогресс() {
   const процент = Math.round(((текущееСостояние.текущийВопрос + 1) / вопросы.length) * 100);
   document.getElementById('прогресс-бар').style.width = процент + '%';
   document.getElementById('прогресс-текст').textContent = `${процент}%`;
 }
 
-// Завершить квалификацию
-function завершитьКвалификацию() {
+async function завершитьКвалификацию() {
   const результат = вычислитьРезультат();
   текущееСостояние.результат = результат;
   
-  // Сохранить в историю
+  try {
+    const payload = {
+      action: 'saveQualification',
+      email: текущийПользователь,
+      timestamp: new Date().toISOString(),
+      answers: JSON.stringify(текущееСостояние.ответы),
+      jtbd: результат.jtbd_код,
+      funnel: результат.воронка,
+      potential: результат.потенциал,
+      region: результат.регион,
+      timeline: результат.срок,
+      lpr: результат.лпр
+    };
+    
+    await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error('Ошибка сохранения:', error);
+  }
+  
   история.unshift({
     дата: new Date().toISOString(),
     ответы: {...текущееСостояние.ответы},
@@ -320,11 +335,9 @@ function завершитьКвалификацию() {
   });
   localStorage.setItem('история_квалификаций', JSON.stringify(история.slice(0, 50)));
   
-  // Показать результаты
   показатьРезультаты(результат);
 }
 
-// Вычислить результат
 function вычислитьРезультат() {
   const jtbd_код = текущееСостояние.ответы.jtbd || 'C02';
   const jtbd = SCRIPT_DATA.jtbd[jtbd_код] || SCRIPT_DATA.jtbd['C02'];
@@ -343,7 +356,6 @@ function вычислитьРезультат() {
   };
 }
 
-// Показать результаты
 function показатьРезультаты(результат) {
   document.getElementById('контейнер-вопросов').style.display = 'none';
   document.getElementById('контейнер-результатов').style.display = 'block';
@@ -353,30 +365,24 @@ function показатьРезультаты(результат) {
   document.getElementById('результат-воронка-описание').textContent = результат.воронка_описание;
   document.getElementById('результат-приоритет').textContent = результат.приоритет;
   
-  // Детализация
   document.getElementById('результат-потенциал').textContent = результат.потенциал;
   document.getElementById('результат-тип').textContent = результат.тип_клиента;
   document.getElementById('результат-регион').textContent = результат.регион;
   document.getElementById('результат-срок').textContent = результат.срок;
   document.getElementById('результат-лпр').textContent = результат.лпр;
   
-  // Шаблон завершения
   const шаблонЗавершения = получитьШаблонЗавершения(результат);
   document.getElementById('шаблон-завершения').textContent = шаблонЗавершения;
 }
 
-// Получить шаблон завершения в зависимости от воронки
 function получитьШаблонЗавершения(результат) {
-  // Универсальный шаблон для целевых клиентов
   if (результат.воронка !== 'Резервная база') {
     return `«Чтобы подготовить точный расчёт, мне нужен проект или чертежи КМ. Я скину информацию о компании, вы мне – документацию и карточку компании. Я сделаю расчёт «под ключ». На встрече покажу, как мы работаем с вашим сегментом. Завтра расчёт будет готов, позвоню в 10:00 согласовать встречу. Хорошо?»`;
   } else {
-    // Если не целевой клиент (резервная база)
     return `«(Имя), спасибо за откровенность. Понимаю вашу ситуацию. Сейчас у нас плотная загрузка на ближайшие месяцы, поэтому не смогу оперативно предоставить расчёт. Оставлю ваши контакты – если ситуация изменится, с удовольствием вернёмся к обсуждению. Удачи с проектом!»`;
   }
 }
 
-// Начать заново
 function начатьЗаново() {
   текущееСостояние = {
     текущийВопрос: 0,
@@ -389,16 +395,14 @@ function начатьЗаново() {
   document.getElementById('контейнер-вопросов').style.display = 'block';
   
   показатьВопрос(0);
-  обновитьПрогресс();
 }
 
-// Отобразить историю
 function отобразитьИсторию() {
   const контейнер = document.getElementById('список-истории');
   if (!контейнер) return;
   
   контейнер.innerHTML = '';
-  история.slice(0, 10).forEach((запись, индекс) => {
+  история.slice(0, 10).forEach((запись) => {
     const элемент = document.createElement('div');
     элемент.className = 'элемент-истории';
     const дата = new Date(запись.дата).toLocaleString('ru-RU');
@@ -407,14 +411,13 @@ function отобразитьИсторию() {
       <div class="детали-истории">
         <strong>JTBD:</strong> ${запись.результат.jtbd_код}<br>
         <strong>Воронка:</strong> ${запись.результат.воронка}<br>
-        <strong>Потенциал:</strong> ${запись.результат.потенциал}
+        <strong>Потенциал:</strong> ${запись.результат.потенциал}<br>
       </div>
     `;
     контейнер.appendChild(элемент);
   });
 }
 
-// Экспорт в CSV
 function экспортироватьВCSV() {
   let csv = 'Дата,JTBD,Воронка,Потенциал,Тип клиента,Регион,Срок,ЛПР\n';
   история.forEach(запись => {
@@ -426,10 +429,5 @@ function экспортироватьВCSV() {
   const ссылка = document.createElement('a');
   ссылка.href = URL.createObjectURL(blob);
   ссылка.download = `квалификация_${new Date().toISOString().split('T')[0]}.csv`;
-  
-// Авто-вход при загрузке
-if (текущийПользователь) {
-показатьПриложение();
-}
   ссылка.click();
 }
