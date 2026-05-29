@@ -1,8 +1,7 @@
 // Скрипт квалификации "Аналитическая платформа Цифра"
 // Исправленная версия: стабильная навигация, завершение, сохранение и вывод результата
 
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxEXyAc4-QqgGCP7DkrP96tyV1_FjoRSdDafPoetbpxM7vP2nKXdAbDktzKB4KLw6kI/exec';
-
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxAdgbR4Bcyq_F1Z5-OVqZanqtXVqxCUJ6DePLK9MIQviRl-VsaCqd0bA8k8M_59MJY/exec';
 let текущийПользователь = localStorage.getItem('user_email');
 let deferredPrompt = null;
 
