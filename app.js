@@ -1,3 +1,6 @@
+// Аналитическая платформа Цифра
+// Полный app.js с исправленным логином, навигацией и сохранением
+
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxAdgbR4Bcyq_F1Z5-OVqZanqtXVqxCUJ6DePLK9MIQviRl-VsaCqd0bA8k8M_59MJY/exec';
 
 let текущийПользователь = localStorage.getItem('user_email');
@@ -5,22 +8,31 @@ let deferredPrompt = null;
 
 const SCRIPT_DATA = {
   jtbd: {
-    A01: { имя: 'Предписание / аварийная ситуация', приоритет: 1, воронка: 'ОГЗ/фокус' },
-    A02: { имя: 'Плановая проверка МЧС', приоритет: 2, воронка: 'ОГЗ/фокус' },
-    A03: { имя: 'Проектная документация', приоритет: 3, воронка: 'ОГЗ/фокус' },
-    B01: { имя: 'Бюджет / смета', приоритет: 4, воронка: 'ОГЗ/упрощённая' },
-    B02: { имя: 'Тендер / конкурс', приоритет: 5, воронка: 'Долгосрок' },
-    B03: { имя: 'Коммерческое предложение', приоритет: 6, воронка: 'ОГЗ/упрощённая' },
-    C01: { имя: 'Профилактика / обновление', приоритет: 7, воронка: 'Развитие' },
-    C02: { имя: 'Расчёт / консультация', приоритет: 8, воронка: 'Резервная база' },
-    E04: { имя: 'Собственник (строит для себя)', приоритет: 9, воронка: 'ОГЗ/фокус' },
-    E05: { имя: 'Управляющая компания', приоритет: 10, воронка: 'Развитие' }
+    A01: { имя: 'Предписание / аварийная ситуация', приоритет: 1, воронка: 'ОГЗ/фокус', причина: 'Клиент пришёл с аварийной или предписательной мотивацией.' },
+    A02: { имя: 'Плановая проверка МЧС', приоритет: 2, воронка: 'ОГЗ/фокус', причина: 'Есть плановая контрольная задача и потребность пройти проверку.' },
+    A03: { имя: 'Проектная документация', приоритет: 3, воронка: 'ОГЗ/фокус', причина: 'Клиенту нужны расчёты, проект и документальная подготовка.' },
+    B01: { имя: 'Бюджет / смета', приоритет: 4, воронка: 'ОГЗ/упрощённая', причина: 'Ключевой фокус клиента — уложиться в бюджет и смету.' },
+    B02: { имя: 'Тендер / конкурс', приоритет: 5, воронка: 'Долгосрок', причина: 'Сделка находится в тендерной или конкурсной логике.' },
+    B03: { имя: 'Коммерческое предложение', приоритет: 6, воронка: 'ОГЗ/упрощённая', причина: 'Клиент на этапе первичного сравнения предложений.' },
+    C01: { имя: 'Профилактика / обновление', приоритет: 7, воронка: 'Развитие', причина: 'Запрос не горящий, связан с профилактикой или плановым обновлением.' },
+    C02: { имя: 'Расчёт / консультация', приоритет: 8, воронка: 'Резервная база', причина: 'Клиент пока на ранней стадии и собирает общую информацию.' },
+    E04: { имя: 'Собственник, строящий для себя', приоритет: 9, воронка: 'ОГЗ/фокус', причина: 'Собственнику нужен понятный и надёжный подрядчик под свой объект.' },
+    E05: { имя: 'Управляющая компания / действующий объект', приоритет: 10, воронка: 'Развитие', причина: 'Запрос связан с эксплуатацией действующего объекта.' }
+  },
+  воронки: {
+    'ОГЗ/фокус': 'Фокусная воронка для горячих и приоритетных сделок',
+    'ОГЗ/упрощённая': 'Упрощённая воронка для типовых и ценочувствительных запросов',
+    'Долгосрок': 'Воронка для решений с длинным циклом выбора',
+    'Развитие': 'Воронка для развития и повторных касаний',
+    'Резервная база': 'Резервная база для ранних или слабых лидов'
   }
 };
 
 const вопросы = [
   {
+    идентификатор: 1,
     код: 'открытие',
+    заголовок: 'Открытие звонка',
     текст: '(Имя), добрый день! Меня зовут Андрей, компания «Ориентир», специалист проектно-сметного отдела. Подтвердите: вам требуется огнезащита металлоконструкций?',
     намекать: 'Подтверждение базовой потребности',
     параметры: [
@@ -29,7 +41,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 2,
     код: 'согласие_расчёт',
+    заголовок: 'Согласие #1',
     текст: 'Скажите, для вас важно получить точный расчёт без переплат и сюрпризов при сдаче?',
     намекать: 'Первое согласие: важность точного расчёта',
     параметры: [
@@ -38,7 +52,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 3,
     код: 'согласие_экспертиза',
+    заголовок: 'Согласие #2',
     текст: 'Вы заинтересованы, чтобы работы прошли без проблем с экспертизой и в срок?',
     намекать: 'Второе согласие: важность экспертизы и сроков',
     параметры: [
@@ -47,7 +63,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 4,
     код: 'согласие_вопросы',
+    заголовок: 'Согласие #3',
     текст: 'Чтобы подготовить максимально точное коммерческое предложение, задам несколько коротких вопросов. Это займёт не больше 3 минут. Договорились?',
     намекать: 'Третье согласие: готовность отвечать на вопросы',
     параметры: [
@@ -56,7 +74,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 5,
     код: 'jtbd',
+    заголовок: 'Причина обращения (JTBD)',
     текст: 'Расскажите подробнее, в связи с чем возникла потребность?',
     намекать: 'Определите основной триггер обращения',
     параметры: [
@@ -73,7 +93,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 6,
     код: 'тип_клиента',
+    заголовок: 'Тип клиента',
     текст: 'Вы генподрядчик, застройщик, собственник или управляющая компания?',
     намекать: 'Определить тип клиента',
     параметры: [
@@ -86,7 +108,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 7,
     код: 'потенциал',
+    заголовок: 'Потенциал сделки',
     текст: 'Какой примерный бюджет или масштаб работ?',
     намекать: 'Оцените размер сделки',
     параметры: [
@@ -96,7 +120,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 8,
     код: 'лпр',
+    заголовок: 'Роль клиента',
     текст: 'Вы принимаете решение по выбору подрядчика?',
     намекать: 'Определить ЛПР / не ЛПР',
     параметры: [
@@ -105,7 +131,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 9,
     код: 'регион',
+    заголовок: 'Регион объекта',
     текст: 'Где находится объект?',
     намекать: 'Уточните регион',
     параметры: [
@@ -115,7 +143,9 @@ const вопросы = [
     ]
   },
   {
+    идентификатор: 10,
     код: 'срок',
+    заголовок: 'Сроки принятия решения',
     текст: 'Когда планируете выбрать подрядчика?',
     намекать: 'Оценка срочности',
     параметры: [
@@ -139,7 +169,9 @@ window.addEventListener('DOMContentLoaded', () => {
   if (сохраненное) {
     try {
       текущееСостояние = JSON.parse(сохраненное);
-    } catch (e) {}
+    } catch (e) {
+      console.error('Ошибка восстановления состояния:', e);
+    }
   }
 
   if (текущийПользователь) {
@@ -150,39 +182,83 @@ window.addEventListener('DOMContentLoaded', () => {
 async function войти(event) {
   event.preventDefault();
 
-  const email = document.getElementById('email-input').value.trim();
-  const ошибка = document.getElementById('login-error');
+  const input = document.getElementById('email-input');
+  const блокОшибки = document.getElementById('login-error');
+  const email = (input?.value || '').trim();
 
-  ошибка.textContent = '';
-  ошибка.classList.add('hidden');
+  if (!блокОшибки) {
+    console.error('Не найден элемент login-error');
+    return;
+  }
+
+  блокОшибки.textContent = '';
+  блокОшибки.classList.add('hidden');
+
+  if (!email) {
+    блокОшибки.textContent = 'Введите email';
+    блокОшибки.classList.remove('hidden');
+    return;
+  }
 
   try {
-    const response = await fetch(`${WEB_APP_URL}?action=checkEmail&email=${encodeURIComponent(email)}`);
-    const data = await response.json();
+    const checkUrl = `${WEB_APP_URL}?action=checkEmail&email=${encodeURIComponent(email)}`;
+    console.log('CHECK EMAIL URL:', checkUrl);
+
+    const response = await fetch(checkUrl, {
+      method: 'GET'
+    });
+
+    console.log('CHECK EMAIL STATUS:', response.status, response.ok);
+
+    const rawText = await response.text();
+    console.log('CHECK EMAIL RAW RESPONSE:', rawText);
+
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (jsonError) {
+      блокОшибки.textContent = 'Сервер вернул не JSON. Проверь Apps Script и права доступа.';
+      блокОшибки.classList.remove('hidden');
+      console.error('JSON parse error:', jsonError);
+      return;
+    }
+
+    console.log('CHECK EMAIL DATA:', data);
 
     if (data.allowed) {
       const deviceId = data.device_id || generateDeviceId();
 
       localStorage.setItem('user_email', email);
       localStorage.setItem('device_id', deviceId);
-
       текущийПользователь = email;
 
-      await fetch(WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email: email, device_id: deviceId })
-      });
+      try {
+        const loginResponse = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'login',
+            email: email,
+            device_id: deviceId
+          })
+        });
+
+        const loginText = await loginResponse.text();
+        console.log('LOGIN SAVE STATUS:', loginResponse.status, loginResponse.ok);
+        console.log('LOGIN SAVE RESPONSE:', loginText);
+      } catch (postError) {
+        console.error('POST login error:', postError);
+      }
 
       показатьПриложение();
     } else {
-      ошибка.textContent = 'Нет доступа. Обратитесь к администратору.';
-      ошибка.classList.remove('hidden');
+      блокОшибки.textContent = data.message || 'Нет доступа. Email не найден или не разрешён.';
+      блокОшибки.classList.remove('hidden');
     }
-  } catch (e) {
-    ошибка.textContent = 'Ошибка связи с Apps Script. Проверь URL веб-приложения и права доступа.';
-    ошибка.classList.remove('hidden');
-    console.error(e);
+  } catch (error) {
+    блокОшибки.textContent = 'Ошибка связи с Apps Script. Открой консоль браузера.';
+    блокОшибки.classList.remove('hidden');
+    console.error('LOGIN ERROR:', error);
   }
 }
 
@@ -199,26 +275,26 @@ function выйти() {
 }
 
 function показатьПриложение() {
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app-screen').classList.remove('hidden');
+  const loginScreen = document.getElementById('login-screen');
+  const appScreen = document.getElementById('app-screen');
+  const userEmail = document.getElementById('user-email');
+  const userAvatar = document.getElementById('user-avatar');
+  const контейнерВопросов = document.getElementById('контейнер-вопросов');
+  const контейнерРезультатов = document.getElementById('контейнер-результатов');
 
-  const emailEl = document.getElementById('user-email');
-  const avatarEl = document.getElementById('user-avatar');
+  if (loginScreen) loginScreen.classList.add('hidden');
+  if (appScreen) appScreen.classList.remove('hidden');
+  if (userEmail) userEmail.textContent = текущийПользователь || '';
+  if (userAvatar) userAvatar.textContent = (текущийПользователь || '?')[0].toUpperCase();
 
-  if (emailEl) emailEl.textContent = текущийПользователь || '';
-  if (avatarEl) avatarEl.textContent = (текущийПользователь || 'A')[0].toUpperCase();
-
-  const блокВопросов = document.getElementById('контейнер-вопросов');
-  const блокРезультатов = document.getElementById('контейнер-результатов');
-
-  if (блокРезультатов) {
-    блокРезультатов.classList.add('hidden');
-    блокРезультатов.style.display = 'none';
+  if (контейнерРезультатов) {
+    контейнерРезультатов.classList.add('hidden');
+    контейнерРезультатов.style.display = 'none';
   }
 
-  if (блокВопросов) {
-    блокВопросов.classList.remove('hidden');
-    блокВопросов.style.display = 'block';
+  if (контейнерВопросов) {
+    контейнерВопросов.classList.remove('hidden');
+    контейнерВопросов.style.display = 'block';
   }
 
   показатьВопрос(текущееСостояние.текущийВопрос || 0);
@@ -243,39 +319,41 @@ function показатьВопрос(индекс) {
   const вопрос = вопросы[индекс];
   if (!вопрос) return;
 
-  document.getElementById('вопрос-заголовок').textContent = `Вопрос ${индекс + 1} из ${вопросы.length}`;
-  document.getElementById('вопрос-текст').textContent = вопрос.текст;
-  document.getElementById('намёк').textContent = вопрос.намекать;
-
+  const заголовок = document.getElementById('вопрос-заголовок');
+  const текст = document.getElementById('вопрос-текст');
+  const намёк = document.getElementById('намёк');
   const контейнер = document.getElementById('варианты-ответов');
-  контейнер.innerHTML = '';
-
-  вопрос.параметры.forEach((вариант) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'вариант-ответа';
-    btn.textContent = вариант.этикетка;
-
-    if (текущееСостояние.ответы[вопрос.код] === вариант.центр) {
-      btn.classList.add('выбран');
-    }
-
-    btn.addEventListener('click', () => {
-      выбратьОтвет(вопрос.код, вариант.центр);
-    });
-
-    контейнер.appendChild(btn);
-  });
-
   const btnНазад = document.getElementById('назад');
   const btnДалее = document.getElementById('далее');
   const btnЗавершить = document.getElementById('завершить');
 
-  if (btnНазад) btnНазад.disabled = индекс === 0;
+  if (заголовок) заголовок.textContent = `Вопрос ${индекс + 1} из ${вопросы.length}`;
+  if (текст) текст.textContent = вопрос.текст;
+  if (намёк) намёк.textContent = вопрос.намекать;
 
-  if (btnДалее) {
-    btnДалее.style.display = индекс === вопросы.length - 1 ? 'none' : 'inline-block';
+  if (контейнер) {
+    контейнер.innerHTML = '';
+
+    вопрос.параметры.forEach((вариант) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'вариант-ответа';
+      btn.textContent = вариант.этикетка;
+
+      if (текущееСостояние.ответы[вопрос.код] === вариант.центр) {
+        btn.classList.add('выбран');
+      }
+
+      btn.addEventListener('click', () => {
+        выбратьОтвет(вопрос.код, вариант.центр);
+      });
+
+      контейнер.appendChild(btn);
+    });
   }
+
+  if (btnНазад) btnНазад.disabled = индекс === 0;
+  if (btnДалее) btnДалее.style.display = индекс === вопросы.length - 1 ? 'none' : 'inline-block';
 
   if (btnЗавершить) {
     if (индекс === вопросы.length - 1) {
@@ -286,11 +364,14 @@ function показатьВопрос(индекс) {
       btnЗавершить.classList.add('hidden');
     }
   }
+
+  обновитьПрогресс();
 }
 
 function выбратьОтвет(код, значение) {
   текущееСостояние.ответы[код] = значение;
   localStorage.setItem('текущая_квалификация', JSON.stringify(текущееСостояние));
+
   показатьВопрос(текущееСостояние.текущийВопрос);
 
   if (текущееСостояние.текущийВопрос < вопросы.length - 1) {
@@ -316,30 +397,45 @@ function предыдущийВопрос() {
   }
 }
 
+function обновитьПрогресс() {
+  const процент = Math.round(((текущееСостояние.текущийВопрос + 1) / вопросы.length) * 100);
+  const бар = document.getElementById('прогресс-бар');
+  const текст = document.getElementById('прогресс-текст');
+
+  if (бар) бар.style.width = `${процент}%`;
+  if (текст) текст.textContent = `${процент}%`;
+}
+
 async function завершитьКвалификацию() {
   const результат = вычислитьРезультат();
   текущееСостояние.результат = результат;
   localStorage.setItem('текущая_квалификация', JSON.stringify(текущееСостояние));
 
   try {
-    await fetch(WEB_APP_URL, {
+    const payload = {
+      action: 'saveQualification',
+      email: текущийПользователь,
+      timestamp: new Date().toISOString(),
+      answers: JSON.stringify(текущееСостояние.ответы),
+      jtbd: результат.jtbd_код,
+      funnel: результат.воронка,
+      potential: результат.потенциал,
+      region: результат.регион,
+      timeline: результат.срок,
+      lpr: результат.лпр
+    };
+
+    const saveResponse = await fetch(WEB_APP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'saveQualification',
-        email: текущийПользователь,
-        timestamp: new Date().toISOString(),
-        answers: JSON.stringify(текущееСостояние.ответы),
-        jtbd: результат.jtbd_код,
-        funnel: результат.воронка,
-        potential: результат.потенциал,
-        region: результат.регион,
-        timeline: результат.срок,
-        lpr: результат.лпр
-      })
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
     });
-  } catch (e) {
-    console.error('Ошибка сохранения:', e);
+
+    const saveText = await saveResponse.text();
+    console.log('SAVE QUALIFICATION STATUS:', saveResponse.status, saveResponse.ok);
+    console.log('SAVE QUALIFICATION RESPONSE:', saveText);
+  } catch (error) {
+    console.error('Ошибка сохранения:', error);
   }
 
   история.unshift({
@@ -356,31 +452,48 @@ function вычислитьРезультат() {
   const jtbd_код = текущееСостояние.ответы.jtbd || 'C02';
   const jtbd = SCRIPT_DATA.jtbd[jtbd_код] || SCRIPT_DATA.jtbd.C02;
 
+  const типКлиента = текущееСостояние.ответы.тип_клиента || 'не указан';
+  const потенциал = текущееСостояние.ответы.потенциал || 'не указан';
+  const регион = текущееСостояние.ответы.регион || 'не указан';
+  const срок = текущееСостояние.ответы.срок || 'не указан';
+  const лпр = текущееСостояние.ответы.лпр === 'лпр' ? 'Да' : 'Нет';
+
+  const причины = [];
+  причины.push(`JTBD определён по ответу: ${jtbd.имя}`);
+  if (типКлиента !== 'не указан') причины.push(`Тип клиента: ${типКлиента}`);
+  if (потенциал !== 'не указан') причины.push(`Потенциал: ${потенциал}`);
+  if (регион !== 'не указан') причины.push(`Регион: ${регион}`);
+  if (срок !== 'не указан') причины.push(`Срок принятия решения: ${срок}`);
+  причины.push(`ЛПР: ${лпр}`);
+  причины.push(jtbd.причина);
+
   return {
-    jtbd_код: jtbd_код,
     jtbd: jtbd.имя,
+    jtbd_код: jtbd_код,
     воронка: jtbd.воронка,
+    воронка_описание: SCRIPT_DATA.воронки[jtbd.воронка] || 'Не определена',
     приоритет: jtbd.приоритет,
-    потенциал: текущееСостояние.ответы.потенциал || 'не указан',
-    тип_клиента: текущееСостояние.ответы.тип_клиента || 'не указан',
-    регион: текущееСостояние.ответы.регион || 'не указан',
-    срок: текущееСостояние.ответы.срок || 'не указан',
-    лпр: текущееСостояние.ответы.лпр === 'лпр' ? 'Да' : 'Нет'
+    потенциал: потенциал,
+    тип_клиента: типКлиента,
+    регион: регион,
+    срок: срок,
+    лпр: лпр,
+    объяснение: причины.join('. ')
   };
 }
 
 function показатьРезультаты(результат) {
-  const блокВопросов = document.getElementById('контейнер-вопросов');
-  const блокРезультатов = document.getElementById('контейнер-результатов');
+  const контейнерВопросов = document.getElementById('контейнер-вопросов');
+  const контейнерРезультатов = document.getElementById('контейнер-результатов');
 
-  if (блокВопросов) {
-    блокВопросов.classList.add('hidden');
-    блокВопросов.style.display = 'none';
+  if (контейнерВопросов) {
+    контейнерВопросов.classList.add('hidden');
+    контейнерВопросов.style.display = 'none';
   }
 
-  if (блокРезультатов) {
-    блокРезультатов.classList.remove('hidden');
-    блокРезультатов.style.display = 'block';
+  if (контейнерРезультатов) {
+    контейнерРезультатов.classList.remove('hidden');
+    контейнерРезультатов.style.display = 'block';
   }
 
   const jtbd = document.getElementById('результат-jtbd');
@@ -402,9 +515,10 @@ function показатьРезультаты(результат) {
 
 function получитьШаблонЗавершения(результат) {
   if (результат.воронка !== 'Резервная база') {
-    return 'Чтобы подготовить точный расчёт, мне нужен проект или чертежи КМ. Я скину информацию о компании, вы мне — документацию и карточку компании. Я сделаю расчёт под ключ. Завтра расчёт будет готов, позвоню согласовать встречу.';
+    return 'Чтобы подготовить точный расчёт, мне нужен проект или чертежи КМ. Я скину информацию о компании, вы мне — документацию и карточку компании. Я сделаю расчёт под ключ. На встрече покажу, как мы работаем с вашим сегментом. Завтра расчёт будет готов, позвоню в 10:00 согласовать встречу. Хорошо?';
   }
-  return 'Спасибо за откровенность. Зафиксирую контакт и вернёмся к обсуждению, когда проект перейдёт в более активную стадию.';
+
+  return 'Спасибо за откровенность. Понимаю вашу ситуацию. Сейчас зафиксирую контакт и вернёмся к обсуждению, когда появится более предметный запрос или активная стадия проекта.';
 }
 
 function начатьЗаново() {
@@ -416,18 +530,58 @@ function начатьЗаново() {
 
   localStorage.removeItem('текущая_квалификация');
 
-  const блокРезультатов = document.getElementById('контейнер-результатов');
-  const блокВопросов = document.getElementById('контейнер-вопросов');
+  const контейнерРезультатов = document.getElementById('контейнер-результатов');
+  const контейнерВопросов = document.getElementById('контейнер-вопросов');
 
-  if (блокРезультатов) {
-    блокРезультатов.classList.add('hidden');
-    блокРезультатов.style.display = 'none';
+  if (контейнерРезультатов) {
+    контейнерРезультатов.classList.add('hidden');
+    контейнерРезультатов.style.display = 'none';
   }
 
-  if (блокВопросов) {
-    блокВопросов.classList.remove('hidden');
-    блокВопросов.style.display = 'block';
+  if (контейнерВопросов) {
+    контейнерВопросов.classList.remove('hidden');
+    контейнерВопросов.style.display = 'block';
   }
 
   показатьВопрос(0);
+}
+
+function отобразитьИсторию() {
+  const контейнер = document.getElementById('список-истории');
+  if (!контейнер) return;
+
+  контейнер.innerHTML = '';
+
+  история.slice(0, 10).forEach((запись) => {
+    const элемент = document.createElement('div');
+    элемент.className = 'элемент-истории';
+
+    const дата = new Date(запись.дата).toLocaleString('ru-RU');
+
+    элемент.innerHTML = `
+      <div class="дата-истории">${дата}</div>
+      <div class="детали-истории">
+        <strong>JTBD:</strong> ${запись.результат.jtbd_код}<br>
+        <strong>Воронка:</strong> ${запись.результат.воронка}<br>
+        <strong>Потенциал:</strong> ${запись.результат.потенциал}<br>
+      </div>
+    `;
+
+    контейнер.appendChild(элемент);
+  });
+}
+
+function экспортироватьВCSV() {
+  let csv = 'Дата,JTBD,Воронка,Потенциал,Тип клиента,Регион,Срок,ЛПР\n';
+
+  история.forEach((запись) => {
+    const р = запись.результат;
+    csv += `${new Date(запись.дата).toLocaleString('ru-RU')},${р.jtbd_код},${р.воронка},${р.потенциал},${р.тип_клиента},${р.регион},${р.срок},${р.лпр}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const ссылка = document.createElement('a');
+  ссылка.href = URL.createObjectURL(blob);
+  ссылка.download = `квалификация_${new Date().toISOString().split('T')[0]}.csv`;
+  ссылка.click();
 }
