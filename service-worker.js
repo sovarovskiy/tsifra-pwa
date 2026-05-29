@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tsifra-v5';  ;const urlsToCache = [
+const CACHE_NAME = 'tsifra-65';  ;const urlsToCache = [
   '/',
   '/index.html',
   '/style.css',
