@@ -1,8 +1,7 @@
 // Аналитическая платформа Цифра
 // Упрощённая версия для стабильной работы с Google Apps Script через GET-запросы
 
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxAdgbR4Bcyq_F1Z5-OVqZanqtXVqxCUJ6DePLK9MIQviRl-VsaCqd0bA8k8M_59MJY/exec';
-
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxHsn0VuZ_hDh1dA5RwNFtDBJdQNvDUsiY0UQf0HXYHsWUkCnrpTPrxlRxc4lX3K1_T/exec';
 let текущийПользователь = localStorage.getItem('user_email');
 let deferredPrompt = null;
 
